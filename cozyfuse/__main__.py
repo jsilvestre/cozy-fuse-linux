@@ -42,10 +42,12 @@ def main(argv=sys.argv):
         sys.exit(2)
 
     elif args.action == 'configure':
-        actions.configure_new_device(args.name, args.url, args.path)
+        password = retrieve_user_password()
+        actions.configure_new_device(args.name, args.url, args.path, password)
 
     elif args.action == 'remove_configuration':
-        actions.remove_device(args.name)
+        password = retrieve_user_password()
+        actions.remove_device(args.name, password)
 
     elif args.action == 'sync':
         actions.sync(args.name)
@@ -57,7 +59,8 @@ def main(argv=sys.argv):
         actions.unmount_folder(args.name, args.path)
 
     elif args.action == 'reset':
-        actions.reset()
+        password = retrieve_user_password()
+        actions.reset(password)
 
     elif args.action == 'display_config':
         actions.display_config()
@@ -68,6 +71,13 @@ def main(argv=sys.argv):
     else:
         parser.print_help()
         print('\nYou must specify an action argument\n')
+
+def retrieve_user_password:
+    '''
+    Ask for the user password
+    '''
+    return getpass.getpass('Type your Cozy password (won\'t be stored):\n')
+
 
 if __name__ == "__main__":
     main()

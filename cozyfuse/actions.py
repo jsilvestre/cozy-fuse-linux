@@ -12,28 +12,24 @@ import dbutils
 from couchdb import Server
 
 
-def register_device_remotely(name):
+def register_device_remotely(name, password):
     '''
     Register device to target Cozy
     '''
     (url, path) = local_config.get_config(name)
     if url[-1:] == '/':
         url = url[:-(len(name)+1)]
-    password = getpass.getpass('Type your Cozy password to register your '
-                               'device remotely:\n')
     (device_id, device_password) = remote.register_device(name, url,
                                                           path, password)
     local_config.set_device_config(name, device_id, device_password)
 
 
-def remove_device_remotely(name):
+def remove_device_remotely(name, password):
     '''
     Delete given device form target Cozy.
     '''
     (url, path) = local_config.get_config(name)
     (device_id, password) = local_config.get_device_config(name)
-    password = getpass.getpass('Type your Cozy password to remove your '
-                               'device remotely:\n')
     remote.remove_device(url, device_id, password)
 
 
@@ -87,7 +83,7 @@ def kill_running_replications():
             print 'Replication %s was not stopped.' % data['replication_id']
 
 
-def remove_device(name):
+def remove_device(name, password):
     '''
     Remove device from local and remote configuration by:
 
@@ -99,7 +95,7 @@ def remove_device(name):
     (url, path) = local_config.get_config(name)
 
     couchmount.unmount(path)
-    remove_device_remotely(name)
+    remove_device_remotely(name, password)
 
     # Remove database
     dbutils.remove_db(name)
@@ -109,7 +105,7 @@ def remove_device(name):
     print 'Configuration %s successfully removed.' % name
 
 
-def reset():
+def reset(password):
     '''
     Reset local and remote configuration by:
 
@@ -127,7 +123,7 @@ def reset():
 
     for name in config.keys():
         print '- Clearing %s' % name
-        remove_device(name)
+        remove_device(name, password)
 
     # Remove local config file
     local_config.clear()
@@ -186,7 +182,7 @@ def unregister_device(name):
     print 'Removal succeeded, everything clean!' % name
 
 
-def configure_new_device(name, url, path):
+def configure_new_device(name, url, path, password):
     '''
     * Create configuration for given device.
     * Create database and init CouchDB views.
@@ -199,7 +195,7 @@ def configure_new_device(name, url, path):
     (db_login, db_password) = dbutils.init_db(name)
     local_config.add_config(name, url, path, db_login, db_password)
     print 'Step 1 succeeded: Local configuration created'
-    register_device_remotely(name)
+    register_device_remotely(name, password)
     print 'Step 2 succeeded: Device registered remotely.'
     print ''
     print 'Now running the first time replication (it could be very long)...'
