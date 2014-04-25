@@ -1,17 +1,15 @@
-#:kivy 1.0.9
-Configuration:
+ConfigurationScreen:
 
 <TabTextInput@TextInput>:
     multiline: False
     padding: [10, 10, 10, 10]
 
-<Configuration>:
-    url: url
-    pwd: password
-    name: name
-    mount_path: mount_path
-    error: error
-    progress: bar
+<ConfigurationScreen>:
+    cozy_url: cozy_url
+    cozy_password: cozy_password
+    device_name: device_name
+    local_mount_path: local_mount_path
+    error_message: error_message
     canvas.before:
         Color:
             rgba: 1, 1, 1, 1
@@ -25,9 +23,6 @@ Configuration:
         col_default_width: 300
         padding: 20
         spacing: 10
-        pos: self.pos
-        size: self.size
-        top: root.top - 50
         Image:
             source: './icon/icon.png'
             height: 60
@@ -45,43 +40,48 @@ Configuration:
         ProgressBar:
             max: 100
             value: 0
-            id: bar
+
         Label:
             text: "L'url de votre cozy"
             color: [0,0,0,0]
             markup: True
         TabTextInput:
-            id: url
+            id: cozy_url
             focus: True
             hint_text: 'http(s)://yourcozy.domain.tld'
             input_type: 'url'
-            next: password
+            next: cozy_password
+            text: 'https://joseph-silvestre38.cozycloud.cc'
         Label:
             text: 'Le mot de passe de votre cozy'
             color: [0,0,0,0]
             markup: True
         TabTextInput:
-            id: password
+            id: cozy_password
             password: True
+            text: 'deadly02'
 
-            next: name
+            next: device_name
         Label:
             text: 'Le nom de votre device'
             color: [0,0,0,0]
             markup: True
         TabTextInput:
-            id: name
+            id: device_name
+            next: local_mount_path
+            text: 'osx'
 
         Label:
             text: 'Votre dossier local'
             color: [0,0,0,1]
             markup: True
         TabTextInput:
-            id: mount_path
+            id: local_mount_path
+            text: '~/Cozy'
 
         Label:
-            text:''
-            id: error
+            text: ''
+            id: error_message
             color: [1,0,0,0]
             markup: True
         Button:

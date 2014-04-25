@@ -1,0 +1,113 @@
+#:kivy 1.0.9
+#:import sla kivy.adapters.listadapter
+
+ManagementScreen:
+
+<ListItemButton>:
+    color: [0, 0, 0, 1]
+    deselected_color: [0, 0, 0, 0]
+    selected_color: [0.99, 0.99, 0.99, 1]
+
+<CustomLabel@Label>:
+    color: [0,0,0,0]
+    markup: True
+
+<Popup>:
+    cozy_password: cozy_password
+    confirm_button: confirm_button
+    feedback_message: feedback_message
+
+    size_hint: (None, None)
+    size: (400, 300)
+    title: 'Please, confirm you want to remove the device all associated file on  your local system'
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            size_hint: (1, 0.5)
+            Label:
+                size_hint: (0.4, None)
+                height: 30
+                text: 'Your Cozy password'
+            TextInput:
+                id: cozy_password
+                size_hint: (0.6, None)
+                height: 30
+                password: True
+                focus: True
+        Label:
+            id: feedback_message
+            size_hint: (1, 0.5)
+            color: [1, 0, 0, 1]
+        BoxLayout:
+            size_hint: (1, None)
+            height: 40
+            Button:
+                size_hint: (0.5, 1)
+                height: 50
+                text: 'Cancel'
+                on_press: root.dismiss()
+            Button:
+                id: confirm_button
+                size_hint: (0.5, 1)
+                height: 40
+                text: 'Confirm deletion'
+
+<ManagementScreen>:
+    device_list: device_list
+    device_details: device_details
+    device_url: device_url
+    device_mount_path: device_mount_path
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    GridLayout:
+        rows: 1
+        row_default_height: 30
+        cols: 2
+        padding: 20
+        spacing: 10
+        BoxLayout
+            size_hint: [0.25, 1]
+            orientation: 'vertical'
+            ListView:
+                id: device_list
+                color: [0, 0, 0, 1]
+            Button:
+                size_hint_y: 0.1
+                text: 'New'
+                on_press: root.on_new_device()
+        GridLayout:
+            id: device_details
+            opacity: 0.0
+            border: 10, 10, 10, 10
+            rows: 4
+            cols: 2
+            row_default_height: 30
+            row_force_default: True
+            spacing: 20
+            CustomLabel:
+                text: "Cozy's URL"
+            CustomLabel:
+                id: device_url
+                text: ""
+            CustomLabel:
+                text: "Mount path"
+            CustomLabel:
+                id: device_mount_path
+                text: ""
+
+            Label:
+                text:""
+            Button:
+                height: 50
+                text: 'Start/Stop Sync'
+                on_press: root.on_mount_unmount_device()
+            Label:
+                text:""
+            Button:
+                height: 50
+                text: 'Remove'
+                on_press: root.on_remove_device()
