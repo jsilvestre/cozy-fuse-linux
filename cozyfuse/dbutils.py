@@ -318,3 +318,19 @@ def init_device(database, url, path, device_pwd, device_id):
         logger.warn('[DB] Device filter document already exists')
 
     return False
+
+def get_replication_progress(name):
+    '''
+    Get the progress of all continuous replications
+    '''
+    server = Server('http://localhost:5984/')
+    tasks = server.tasks()
+    i = 0
+    for task in tasks:
+        if i == 0:
+            if task.get('continuous'):
+                print "Continuous r={}, w={}, p={}%".format(task.get('docs_read'), task.get('docs_written'), task.get('progress'))
+            else:
+                print "Initialize r={}, w={}, p={}%".format(task.get('docs_read'), task.get('docs_written'), task.get('progress'))
+        i = i + 1
+    return 0

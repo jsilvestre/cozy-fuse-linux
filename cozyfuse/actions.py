@@ -11,6 +11,52 @@ import dbutils
 
 from couchdb import Server
 
+class ProcessedException(Exception):
+    pass
+
+
+def configure_new_device(name, url, path, password):
+    '''
+    * Create configuration for given device.
+    * Create database and init CouchDB views.
+    * Register device on remote Cozy defined by *url*.
+    * Init replications.
+    '''
+    print 'Welcome to Cozy Fuse!'
+    print ''
+    print 'Let\'s go configuring your new Cozy connection...'
+    (db_login, db_password) = dbutils.init_db(name)
+
+
+    '''
+    if something goes wrong during the initialization,
+    we rollback previous operations
+    '''
+    try:
+        local_config.add_config(name, url, path, db_login, db_password)
+        print 'Step 1 succeeded: Local configuration created'
+        register_device_remotely(name, password)
+        print 'Step 2 succeeded: Device registered remotely.'
+        print ''
+        print 'Now running the first time replication (it could be very long)...'
+        init_replication(name)
+        print 'Step 3 succeeded: Metadata copied.'
+        print ''
+        print 'Cozy configuration %s succeeded!' % name
+        print 'Now type cozy-fuse sync-n %s to keep your data synchronized.' \
+               % name
+        print 'And type cozy-fuse mount -n %s to see your files in your ' \
+              'filesystem.' % name
+    except local_config.LocalDeviceNameAlreadyUsed, e:
+        raise ProcessedException(e)
+    except ProcessedException, e:
+        raise e
+    except (Exception, KeyboardInterrupt), e:
+        print e
+        print "THIS IS A SAD FATAL ERROR"
+        remove_device(name, password)
+        raise e
+
 
 def register_device_remotely(name, password):
     '''
@@ -19,18 +65,20 @@ def register_device_remotely(name, password):
     (url, path) = local_config.get_config(name)
     if url[-1:] == '/':
         url = url[:-(len(name)+1)]
-    (device_id, device_password) = remote.register_device(name, url,
+    try:
+        (device_id, device_password) = remote.register_device(name, url,
                                                           path, password)
-    local_config.set_device_config(name, device_id, device_password)
 
+        local_config.set_device_config(name, device_id, device_password)
 
-def remove_device_remotely(name, password):
-    '''
-    Delete given device form target Cozy.
-    '''
-    (url, path) = local_config.get_config(name)
-    (device_id, password) = local_config.get_device_config(name)
-    remote.remove_device(url, device_id, password)
+    except remote.WrongCozyURL, e:
+        local_config.remove_config(name)
+        raise ProcessedException(e)
+    except local_config.LocalDeviceNameAlreadyUsed, e:
+        remove_device_remotely(name, password)
+        raise ProcessedException(e)
+    except Exception, e:
+        raise e
 
 
 def init_replication(name):
@@ -61,6 +109,7 @@ def init_replication(name):
     replication.replicate(name, url, name, password, device_id,
                           db_login, db_password)
     print 'Metadata replications are done.'
+
 
 def kill_running_replications():
     '''
@@ -103,6 +152,15 @@ def remove_device(name, password):
 
     local_config.remove_config(name)
     print 'Configuration %s successfully removed.' % name
+
+
+def remove_device_remotely(name, password):
+    '''
+    Delete given device form target Cozy.
+    '''
+    (url, path) = local_config.get_config(name)
+    (device_id, device_password) = local_config.get_device_config(name)
+    remote.remove_device(url, device_id, password)
 
 
 def reset(password):
@@ -163,51 +221,6 @@ def display_config():
         print ' '
 
 
-def unregister_device(name):
-    '''
-    Remove device from local configuration, destroy corresponding database
-    and unregister it from remote Cozy.
-    '''
-    (url, path) = local_config.get_config(name)
-    (device_id, device_password) = local_config.get_device_config(name)
-
-    print 'Cozy connection removal for %s.' % name
-    local_config.remove(name)
-    print '- Local configuration removed.'
-    dbutils.remove_db(name)
-    print '- Local files removed.'
-    password = getpass.getpass('Please type the password of your Cozy:\n')
-    remote.remove_device(url, device_id, password)
-    print '- Remote configuration removed.'
-    print 'Removal succeeded, everything clean!' % name
-
-
-def configure_new_device(name, url, path, password):
-    '''
-    * Create configuration for given device.
-    * Create database and init CouchDB views.
-    * Register device on remote Cozy defined by *url*.
-    * Init replications.
-    '''
-    print 'Welcome to Cozy Fuse!'
-    print ''
-    print 'Let\'s go configuring your new Cozy connection...'
-    (db_login, db_password) = dbutils.init_db(name)
-    local_config.add_config(name, url, path, db_login, db_password)
-    print 'Step 1 succeeded: Local configuration created'
-    register_device_remotely(name, password)
-    print 'Step 2 succeeded: Device registered remotely.'
-    print ''
-    print 'Now running the first time replication (it could be very long)...'
-    init_replication(name)
-    print 'Step 3 succeeded: Metadata copied.'
-    print ''
-    print 'Cozy configuration %s succeeded!' % name
-    print 'Now type cozy-fuse sync-n %s to keep your data synchronized.' % name
-    print 'And type cozy-fuse mount -n %s to see your files in your ' \
-          'filesystem.' % name
-
-
 def sync(name):
     '''
     Run continuous synchronization between CouchDB instances.
@@ -224,8 +237,17 @@ def sync(name):
     print 'Continuous replications started.'
     print 'Running daemon for binary synchronization...'
     try:
-        context = local_config.get_daemon_context(name, 'sync')
-        with context:
-            replication.BinaryReplication(name)
+        replication.BinaryReplication(name)
+    except local_config.DaemonAlreadyRunning, e:
+        print e
     except KeyboardInterrupt:
         print ' Binary Synchronization interrupted.'
+
+def sync_daemon(name):
+    '''
+    Run the binary synchronization in a daemon.
+    '''
+    context = local_config.get_daemon_context(name, 'sync')
+    with context:
+        sync(name)
+

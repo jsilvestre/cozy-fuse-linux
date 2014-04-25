@@ -24,6 +24,10 @@ class NoConfigFile(Exception):
     pass
 
 
+class LocalDeviceNameAlreadyUsed(Exception):
+    pass
+
+
 class DaemonAlreadyRunning(Exception):
     pass
 
@@ -47,16 +51,21 @@ def add_config(name, url, path, db_login, db_password):
                 os.utime(CONFIG_PATH, None)
 
         config = get_full_config()
-        config[name] = {
-            'url': url,
-            'path': path,
-            'dblogin': db_login,
-            'dbpassword': db_password,
-        }
+        if name not in config:
+            config[name] = {
+                'url': url,
+                'path': path,
+                'dblogin': db_login,
+                'dbpassword': db_password,
+            }
 
-        output_file = file(CONFIG_PATH, 'w')
-        dump(config, output_file, default_flow_style=False)
-        logger.info('[Config] Configuration for %s saved' % name)
+            output_file = file(CONFIG_PATH, 'w')
+            dump(config, output_file, default_flow_style=False)
+            logger.info('[Config] Configuration for %s saved' % name)
+        else:
+            msg = '[Config] A device already exist locally'
+            raise LocalDeviceNameAlreadyUsed(msg)
+            logger.error(msg)
 
 
 def remove_config(name):
@@ -149,6 +158,7 @@ def get_full_config():
     '''
     Get config (~/.cozyfuse/config.yaml) file as a dict.
     '''
+
     try:
         stream = file(CONFIG_PATH, 'r')
     except IOError:
@@ -183,13 +193,14 @@ def get_daemon_context(device_name, daemon_name):
     if not os.path.isdir(folder):
         os.mkdir(folder)
 
-    if os.path.isfile(pidfile):
+    pidfile_path = os.path.join(folder, pidfile)
+    if os.path.isfile(pidfile_path + '.lock'):
         raise DaemonAlreadyRunning(
-            'Daemon %s for % is already running' % (daemon_name, device_name))
+            'Daemon %s for %s is already running' % (daemon_name, device_name))
 
     return daemon.DaemonContext(
         working_directory=folder,
-        pidfile=lockfile.FileLock(os.path.join(folder, pidfile)),
+        pidfile=lockfile.FileLock(os.path.join(folder, pidfile))
     )
 
 

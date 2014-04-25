@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import sys
+import getpass
 
 import actions
 
@@ -43,14 +44,20 @@ def main(argv=sys.argv):
 
     elif args.action == 'configure':
         password = retrieve_user_password()
-        actions.configure_new_device(args.name, args.url, args.path, password)
+        try:
+            actions.configure_new_device(args.name, args.url, args.path, password)
+        except Exception, e:
+            print e
 
     elif args.action == 'remove_configuration':
         password = retrieve_user_password()
-        actions.remove_device(args.name, password)
+        try:
+            actions.remove_device(args.name, password)
+        except Exception, e:
+            print e
 
     elif args.action == 'sync':
-        actions.sync(args.name)
+        actions.sync_daemon(args.name)
 
     elif args.action == 'mount':
         actions.mount_folder(args.name)
@@ -72,7 +79,7 @@ def main(argv=sys.argv):
         parser.print_help()
         print('\nYou must specify an action argument\n')
 
-def retrieve_user_password:
+def retrieve_user_password():
     '''
     Ask for the user password
     '''

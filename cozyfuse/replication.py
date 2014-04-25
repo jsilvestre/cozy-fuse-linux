@@ -98,13 +98,17 @@ def get_binary_progression(database):
     '''
     Recover progression of binary downloads.
     '''
+    print "recover progression for %s" % database
     db = dbutils.get_db(database)
-    files = db.view("file/all")
-    binaries = db.view('binary/all')
-    if len(files) is 0:
-        return 1
+    if db is not None:
+        files = db.view("file/all")
+        binaries = db.view('binary/all')
+        if len(files) is 0:
+            return 1
+        else:
+            return len(binaries)/float(len(files))
     else:
-        return len(binaries)/float(len(files))
+        return 0
 
 
 class BinaryReplication():
