@@ -57,7 +57,10 @@ def main(argv=sys.argv):
             print e
 
     elif args.action == 'sync':
-        actions.sync_daemon(args.name)
+        try:
+            actions.sync_daemon(args.name)
+        except Exception, e:
+            print e
 
     elif args.action == 'mount':
         actions.mount_folder(args.name)
